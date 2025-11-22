@@ -1,867 +1,850 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
+<!DOCTYPE html>
+<html lang="tr">
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta http-equiv="Content-Style-Type" content="text/css">
-  <title></title>
-  <meta name="Generator" content="Cocoa HTML Writer">
-  <meta name="CocoaVersion" content="2575.7">
-  <style type="text/css">
-    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; -webkit-text-stroke: #000000}
-    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; -webkit-text-stroke: #000000; min-height: 14.0px}
-    span.s1 {font-kerning: none}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Ejder Sofrası</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        #ui-container {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            z-index: 5;
+        }
+        .hud-bar {
+            pointer-events: auto;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .bars-wrapper { width: 300px; }
+        .bar-bg {
+            width: 100%; height: 20px;
+            background: #333;
+            border: 2px solid #555;
+            margin-bottom: 8px;
+            position: relative;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .bar-fill {
+            height: 100%;
+            transition: width 0.2s;
+        }
+        #hp-fill {
+            background: linear-gradient(90deg, #c0392b, #e74c3c);
+            width: 100%;
+        }
+        #ult-fill {
+            background: linear-gradient(90deg, #8e44ad, #9b59b6);
+            width: 0%;
+        }
+        .bar-text {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            top: 0;
+            font-size: 12px;
+            line-height: 20px;
+            color: white;
+            font-weight: bold;
+            text-shadow: 1px 1px 0 #000;
+        }
+
+        /* HUD UX dokunuşları */
+
+        .ulti-ready-glow {
+            box-shadow: 0 0 10px #f1c40f, 0 0 20px #f39c12;
+            animation: ulti-pulse 0.8s infinite;
+        }
+        @keyframes ulti-pulse {
+            0%   { transform: scale(1); }
+            50%  { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        #hp-fill.hp-critical {
+            background: linear-gradient(90deg, #ff0000, #ff4d4d);
+        }
+
+        #low-hp-overlay {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            background: radial-gradient(circle, rgba(0,0,0,0) 40%, rgba(150,0,0,0.5) 90%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 4;
+        }
+        body.low-hp-active #low-hp-overlay {
+            opacity: 1;
+        }
+
+        #char-select-screen {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+            z-index: 10;
+        }
+        .char-card {
+            display: inline-block;
+            width: 130px;
+            height: 200px;
+            margin: 10px;
+            background: #222;
+            border: 2px solid #444;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            text-align: center;
+            padding: 10px;
+            vertical-align: top;
+        }
+        .char-card:hover {
+            transform: scale(1.05);
+            border-color: #f1c40f;
+            background: #333;
+        }
+
+        #game-over-screen {
+            display: none;
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(20, 20, 20, 0.95);
+            border: 4px solid #d35400;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            color: white;
+            width: 90%;
+            max-width: 400px;
+            pointer-events: auto;
+            z-index: 20;
+        }
+        input {
+            background: #333;
+            border: 1px solid #555;
+            color: white;
+            padding: 10px;
+            width: 80%;
+            margin: 10px 0;
+            text-align: center;
+        }
+        button {
+            background: #d35400;
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 5px;
+        }
+        .story-btn {
+            background: linear-gradient(45deg,
+                #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+        }
+
+        .bmc-btn {
+            background: #FFDD00;
+            color: #000;
+            font-weight: bold;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            cursor: pointer;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+    </style>
 </head>
 <body>
-<p class="p1"><span class="s1">&lt;!DOCTYPE html&gt;</span></p>
-<p class="p1"><span class="s1">&lt;html lang="tr"&gt;</span></p>
-<p class="p1"><span class="s1">&lt;head&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;meta charset="UTF-8"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;title&gt;Ejder Sofrası&lt;/title&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"&gt;&lt;/script&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;style&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>body {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>margin: 0;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>padding: 0;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>background-color: #000;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>overflow: hidden;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>#ui-container {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>position: absolute;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>top: 0; left: 0;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>width: 100%; height: 100%;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>pointer-events: none;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>display: flex;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>flex-direction: column;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>z-index: 5;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>.hud-bar {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>pointer-events: auto;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>padding: 20px;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>display: flex;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>justify-content: space-between;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>align-items: flex-start;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>.bars-wrapper { width: 300px; }</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>.bar-bg {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>width: 100%; height: 20px;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>background: #333;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>border: 2px solid #555;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>margin-bottom: 8px;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>position: relative;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>border-radius: 4px;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>overflow: hidden;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>.bar-fill {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>height: 100%;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>transition: width 0.2s;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>#hp-fill {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>background: linear-gradient(90deg, #c0392b, #e74c3c);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>width: 100%;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>#ult-fill {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>background: linear-gradient(90deg, #8e44ad, #9b59b6);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>width: 0%;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>.bar-text {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>position: absolute;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>width: 100%;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>text-align: center;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>top: 0;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>font-size: 12px;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>line-height: 20px;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>color: white;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>font-weight: bold;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>text-shadow: 1px 1px 0 #000;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>/* HUD UX dokunuşları */</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>.ulti-ready-glow {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>box-shadow: 0 0 10px #f1c40f, 0 0 20px #f39c12;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>animation: ulti-pulse 0.8s infinite;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>@keyframes ulti-pulse {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>0% <span class="Apple-converted-space">  </span>{ transform: scale(1); }</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>50%<span class="Apple-converted-space">  </span>{ transform: scale(1.02); }</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>100% { transform: scale(1); }</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>#hp-fill.hp-critical {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>background: linear-gradient(90deg, #ff0000, #ff4d4d);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>#low-hp-overlay {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>position: absolute;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>top: 0; left: 0;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>width: 100%; height: 100%;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>pointer-events: none;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>background: radial-gradient(circle, rgba(0,0,0,0) 40%, rgba(150,0,0,0.5) 90%);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>opacity: 0;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>transition: opacity 0.3s;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>z-index: 4;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>body.low-hp-active #low-hp-overlay {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>opacity: 1;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>#char-select-screen {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>position: absolute;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>top: 0; left: 0;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>width: 100%; height: 100%;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>background: rgba(0,0,0,0.95);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>display: flex;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>flex-direction: column;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>align-items: center;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>justify-content: center;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>pointer-events: auto;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>z-index: 10;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>.char-card {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>display: inline-block;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>width: 130px;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>height: 200px;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>margin: 10px;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>background: #222;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>border: 2px solid #444;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>border-radius: 8px;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>cursor: pointer;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>transition: transform 0.2s;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>text-align: center;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>padding: 10px;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>vertical-align: top;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>.char-card:hover {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>transform: scale(1.05);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>border-color: #f1c40f;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>background: #333;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>#game-over-screen {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>display: none;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>position: absolute;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>top: 50%; left: 50%;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>transform: translate(-50%, -50%);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>background: rgba(20, 20, 20, 0.95);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>border: 4px solid #d35400;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>padding: 30px;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>border-radius: 15px;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>text-align: center;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>color: white;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>width: 90%;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>max-width: 400px;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>pointer-events: auto;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>z-index: 20;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>input {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>background: #333;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>border: 1px solid #555;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>color: white;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>padding: 10px;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>width: 80%;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>margin: 10px 0;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>text-align: center;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>button {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>background: #d35400;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>color: white;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>border: none;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>padding: 12px;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>width: 100%;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>font-weight: bold;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>cursor: pointer;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>margin-top: 5px;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>.story-btn {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>background: linear-gradient(45deg,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>#f09433, #e6683c, #dc2743, #cc2366, #bc1888);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>.bmc-btn {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>background: #FFDD00;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>color: #000;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>font-weight: bold;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>border: none;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>padding: 12px;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>width: 100%;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>cursor: pointer;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>border-radius: 6px;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>margin-top: 10px;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;/style&gt;</span></p>
-<p class="p1"><span class="s1">&lt;/head&gt;</span></p>
-<p class="p1"><span class="s1">&lt;body&gt;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1">&lt;div id="ui-container"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;div id="low-hp-overlay"&gt;&lt;/div&gt;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;div class="hud-bar" id="hud" style="display: none;"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;div class="bars-wrapper"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>&lt;div class="bar-bg"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>&lt;div id="hp-fill" class="bar-fill"&gt;&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>&lt;div class="bar-text"&gt;CAN&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>&lt;div class="bar-bg"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>&lt;div id="ult-fill" class="bar-fill"&gt;&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>&lt;div class="bar-text" id="ult-text"&gt;ULTI (SHIFT)&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>&lt;div class="bar-bg"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>&lt;div id="xp-fill" class="bar-fill"</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                     </span>style="background: linear-gradient(90deg, #2980b9, #3498db); width: 0%;"&gt;&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>&lt;div class="bar-text" id="xp-text"&gt;XP: 0 / 100&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>&lt;div id="level-info"</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                 </span>style="margin-top:4px; font-size:12px; color:#ecf0f1; text-shadow:1px 1px 0 #000;"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>Seviye: 1 • Kill: 0</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;div style="color:white; font-weight:bold; font-size:20px; text-shadow: 2px 2px 0 #000;"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>&lt;div id="score-display"&gt;SKOR: 0&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>&lt;div id="time-display" style="color: #f1c40f;"&gt;SÜRE: 0s&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</span></p>
-<p class="p2"><span class="s1"><span class="Apple-converted-space">    </span></span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;div id="char-select-screen"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;h2 style="color: white; margin-bottom: 20px;"&gt;KAHRAMANINI SEÇ&lt;/h2&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;div id="char-container"&gt;&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;div id="game-over-screen"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;h1 style="color: #e74c3c; margin: 0;"&gt;OYUN BİTTİ&lt;/h1&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;p id="final-score-text"&gt;Skor: 0&lt;/p&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;input type="text" id="player-name" placeholder="Adını Gir..." maxlength="10"&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;button class="story-btn" onclick="shareStory()"&gt;📸 Story Paylaş&lt;/button&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;button onclick="saveAndRestart()"&gt;💾 Tekrar Oyna&lt;/button&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;button class="bmc-btn" onclick="openCoffee()"&gt;☕ Bana Bir Kahve Ismarla&lt;/button&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;div id="leaderboard" style="margin-top:10px; text-align:left; max-height:100px; overflow-y:auto; font-size:14px;"&gt;&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1">&lt;/div&gt;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1">&lt;script&gt;</span></p>
-<p class="p1"><span class="s1">const CHARACTERS = {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>rogue: {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>name: "Rogue",</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>hp: 90,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>speed: 230,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>dmg: 14,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>ultReq: 12,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>color: 0x8e44ad,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>desc: "Hızlı, ölümcül.\nUlti: Gölge Kasırgası"</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>},</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>druid: {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>name: "Druid",</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>hp: 105,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>speed: 200,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>dmg: 10,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>ultReq: 10,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>color: 0x27ae60,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>desc: "Dengeli, destek.\nUlti: Kalkan + Kurt"</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>},</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>barbarian: {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>name: "Barbarian",</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>hp: 120,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>speed: 190,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>dmg: 16,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>ultReq: 14,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>color: 0xc0392b,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>desc: "Ağır vurur.\nUlti: Kanlı Yarma"</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>},</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>paladin: {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>name: "Paladin",</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>hp: 140,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>speed: 185,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>dmg: 12,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>ultReq: 15,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>color: 0xf1c40f,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>desc: "Tank, dayanıklı.\nUlti: İlahi Yıldırım"</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>}</span></p>
-<p class="p1"><span class="s1">};</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1">const LEVEL_THRESHOLDS = [0, 100, 240, 420, 640, 900, 1200];</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1">const HERO_GROWTH = {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>rogue:<span class="Apple-converted-space">    </span>{ hp: 0.06, dmg: 0.12 },</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>druid:<span class="Apple-converted-space">    </span>{ hp: 0.08, dmg: 0.08 },</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>barbarian:{ hp: 0.07, dmg: 0.13 },</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>paladin:<span class="Apple-converted-space">  </span>{ hp: 0.10, dmg: 0.07 }</span></p>
-<p class="p1"><span class="s1">};</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1">const ENEMY_TYPES = {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>light:<span class="Apple-converted-space">  </span>{ name: "Hafif Kılıçlı",<span class="Apple-converted-space">  </span>maxHp: 45, damage: 8,<span class="Apple-converted-space">  </span>xp: 5,<span class="Apple-converted-space">  </span>tint: 0xffaaaa },</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>heavy:<span class="Apple-converted-space">  </span>{ name: "Ağır Kılıçlı", <span class="Apple-converted-space">  </span>maxHp: 75, damage: 11, xp: 15, tint: 0xff5555 },</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>gunner: { name: "Tüfekli Korsan", maxHp: 60, damage: 13, xp: 10, tint: 0xaaaaff }</span></p>
-<p class="p1"><span class="s1">};</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1">let game;</span></p>
-<p class="p1"><span class="s1">let selectedCharKey = null;</span></p>
-<p class="p1"><span class="s1">let score = 0;</span></p>
-<p class="p1"><span class="s1">let gameTime = 0;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1">class PreloadScene extends Phaser.Scene {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>constructor() { super({ key: 'PreloadScene' }); }</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>preload() {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.load.on('loaderror', (file) =&gt; console.log('Dosya yok:', file.key));</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>['rogue', 'barbarian', 'druid', 'paladin', 'pirate'].forEach(k =&gt; {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>this.load.spritesheet(k, `${k}.png`, { frameWidth: 64, frameHeight: 64 });</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>});</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.load.spritesheet('coin', 'coin.png', { frameWidth: 32, frameHeight: 32 });</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.load.image('potion', 'potion.png');</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.load.image('logo', 'logo.png');</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>create() {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.createGenTextures();</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>if(this.textures.exists('coin')) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>this.anims.create({</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>key: 'coin_spin',</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>frames: this.anims.generateFrameNumbers('coin', { start: 0, end: 15 }),</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>frameRate: 16,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>repeat: -1</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>});</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>['rogue', 'barbarian', 'druid', 'paladin'].forEach(k =&gt; {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>if (this.textures.exists(k)) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>this.anims.create({</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>key: k + '_walk',</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>frames: this.anims.generateFrameNumbers(k, { start: 0, end: 3 }),</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>frameRate: 8,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>repeat: -1</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>});</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>});</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>if (this.textures.exists('pirate')) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>this.anims.create({</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>key: 'pirate_walk',</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>frames: this.anims.generateFrameNumbers('pirate', { start: 0, end: 3 }),</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>frameRate: 8,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>repeat: -1</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>});</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.scene.start('MainScene');</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>createGenTextures() {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const g = this.make.graphics({x:0, y:0});</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>g.fillStyle(0x333333);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>g.fillRect(0,0,256,256);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>g.generateTexture('ground_gen', 256, 256);</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const r = this.make.graphics({x:0, y:0});</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>r.fillStyle(0xffffff);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>r.fillRect(0,0,32,32);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>r.generateTexture('placeholder_rect', 32, 32);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>}</span></p>
-<p class="p1"><span class="s1">}</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1">class MainScene extends Phaser.Scene {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>constructor() { super({ key: 'MainScene' }); }</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>create() {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>if (!selectedCharKey) return;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.ground = this.add.tileSprite(</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>0, 0,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>this.scale.width,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>this.scale.height,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>'ground_gen'</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>).setScrollFactor(0).setTint(0x555555);</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.physics.world.setBounds(-10000, -10000, 20000, 20000);</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const charData = CHARACTERS[selectedCharKey];</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>let pKey = this.textures.exists(selectedCharKey) ? selectedCharKey : 'placeholder_rect';</span></p>
-<p class="p2"><span class="s1"><span class="Apple-converted-space">        </span></span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.player = this.physics.add.sprite(0, 0, pKey);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>if (pKey === 'placeholder_rect') {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>this.player.setTint(charData.color).setScale(2);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>} else {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>this.player.play(selectedCharKey + '_walk');</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.cameras.main.startFollow(this.player, true, 0.1, 0.1).setZoom(1.2);</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.hp = charData.hp;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.maxHp = charData.hp;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.baseDamage = charData.dmg;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.ultCharge = 0;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.isDead = false;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>score = 0;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>gameTime = 0;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.playerLevel = 1;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.playerXp = 0;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.killCount = 0;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.cursors = this.input.keyboard.createCursorKeys();</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.wasd = this.input.keyboard.addKeys({</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>W: 'W', A: 'A', S: 'S', D: 'D',</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>SPACE: 'SPACE', SHIFT: 'SHIFT'</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>});</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.enemies = this.physics.add.group();</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.projectiles = this.physics.add.group();</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.items = this.physics.add.group();</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.physics.add.overlap(this.projectiles, this.enemies, this.onHitEnemy, null, this);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.physics.add.collider(this.player, this.enemies, this.onHitPlayer, null, this);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.physics.add.overlap(this.player, this.items, this.onCollectItem, null, this);</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.time.addEvent({</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>delay: 1000,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>loop: true,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>callback: () =&gt; {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>if (!this.isDead) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>gameTime++;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>this.updateHUD();</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>});</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.time.addEvent({</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>delay: 800,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>loop: true,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>callback: this.spawnEnemy,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>callbackScope: this</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>});</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.time.addEvent({</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>delay: 2000,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>loop: true,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>callback: this.spawnItem,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>callbackScope: this</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>});</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.updateHUD();</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>}</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>update() {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>if (this.isDead || !this.player) return;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.ground.tilePositionX = this.cameras.main.scrollX;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.ground.tilePositionY = this.cameras.main.scrollY;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const speed = CHARACTERS[selectedCharKey].speed;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>let vx = 0, vy = 0;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>if (this.cursors.left.isDown || this.wasd.A.isDown) vx = -speed;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>else if (this.cursors.right.isDown || this.wasd.D.isDown) vx = speed;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>if (this.cursors.up.isDown || this.wasd.W.isDown) vy = -speed;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>else if (this.cursors.down.isDown || this.wasd.S.isDown) vy = speed;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.player.setVelocity(vx, vy);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>if (vx !== 0) this.player.setFlipX(vx &lt; 0);</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.player.setDepth(this.player.y);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.enemies.getChildren().forEach(e =&gt; e.setDepth(e.y));</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>if (Phaser.Input.Keyboard.JustDown(this.wasd.SPACE)) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>this.basicAttack();</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>if (Phaser.Input.Keyboard.JustDown(this.wasd.SHIFT) &amp;&amp;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>this.ultCharge &gt;= CHARACTERS[selectedCharKey].ultReq) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>this.useUltimate();</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.enemies.getChildren().forEach(enemy =&gt; {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>this.physics.moveToObject(enemy, this.player, 60 + (gameTime / 2));</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>});</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>}</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>useUltimate() {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.ultCharge = 0;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.updateHUD();</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const char = selectedCharKey;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>if (char === 'paladin') {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>this.player.setVelocity(0, 0);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>if (this.player.body) this.player.body.moves = false;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>this.time.delayedCall(700, () =&gt; {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>if (this.player.body) this.player.body.moves = true;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>});</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const radius = 200;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const blast = this.add.circle(</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>this.player.x,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>this.player.y,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>radius,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>CHARACTERS[char].color,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>0.4</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>this.tweens.add({</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>targets: blast,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>alpha: 0,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>duration: 500,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>onComplete: () =&gt; blast.destroy()</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>});</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const ultDmg = this.baseDamage * 3;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>this.enemies.getChildren().forEach(e =&gt; {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>if (Phaser.Math.Distance.Between(</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>this.player.x, this.player.y, e.x, e.y</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>) &lt; radius) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>e.hp -= ultDmg;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>if (e.hp &lt;= 0) this.onEnemyKilled(e);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>});</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const heal = Math.round(this.maxHp * 0.15);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>this.hp = Math.min(this.hp + heal, this.maxHp);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>this.updateHUD();</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>} else if (char === 'barbarian') {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const radius = 220;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const color = CHARACTERS[char].color;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const blast = this.add.circle(this.player.x, this.player.y, radius, color, 0.35);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>this.tweens.add({ targets: blast, alpha: 0, duration: 400, onComplete: () =&gt; blast.destroy() });</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const ultDmg = this.baseDamage * 4;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>this.enemies.getChildren().forEach(e =&gt; {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>if (Phaser.Math.Distance.Between(this.player.x, this.player.y, e.x, e.y) &lt; radius) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>e.hp -= ultDmg;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>if (e.hp &lt;= 0) this.onEnemyKilled(e);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>});</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>} else if (char === 'rogue') {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const radius = 160;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const ticks = 5;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const dmgPerTick = Math.round(this.baseDamage * 0.8);</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>for (let i = 0; i &lt; ticks; i++) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>this.time.delayedCall(i * 200, () =&gt; {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>const ring = this.add.circle(</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>this.player.x,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>this.player.y,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>radius,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>CHARACTERS[char].color,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>0.25</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>this.tweens.add({</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>targets: ring,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>alpha: 0,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>duration: 200,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>onComplete: () =&gt; ring.destroy()</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>});</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>this.enemies.getChildren().forEach(e =&gt; {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>if (Phaser.Math.Distance.Between(</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                            </span>this.player.x, this.player.y, e.x, e.y</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>) &lt; radius) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                            </span>e.hp -= dmgPerTick;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                            </span>if (e.hp &lt;= 0) this.onEnemyKilled(e);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>});</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>});</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>} else if (char === 'druid') {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const radius = 180;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const shield = Math.round(this.maxHp * 0.15);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>this.hp = Math.min(this.hp + shield, this.maxHp);</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const ring = this.add.circle(</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>this.player.x,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>this.player.y,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>radius,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>CHARACTERS[char].color,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>0.3</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>this.tweens.add({</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>targets: ring,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>alpha: 0,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>duration: 500,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>onComplete: () =&gt; ring.destroy()</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>});</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const ultDmg = this.baseDamage * 2;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>this.enemies.getChildren().forEach(e =&gt; {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>if (Phaser.Math.Distance.Between(</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>this.player.x, this.player.y, e.x, e.y</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>) &lt; radius) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>e.hp -= ultDmg;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>if (e.hp &lt;= 0) this.onEnemyKilled(e);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>});</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>this.updateHUD();</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>}</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>spawnItem() {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const x = this.player.x + Phaser.Math.Between(-400, 400);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const y = this.player.y + Phaser.Math.Between(-300, 300);</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>if (Math.random() &gt; 0.7) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>let item = this.items.create(x, y, 'potion').setScale(0.8);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>item.type = 'potion';</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>this.tweens.add({</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>targets: item,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>y: y - 5,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>duration: 1000,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>yoyo: true,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>repeat: -1</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>});</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>} else {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>let item = this.items.create(</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>x, y,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>this.textures.exists('coin') ? 'coin' : 'placeholder_rect'</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>if (this.textures.exists('coin')) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>item.play('coin_spin');</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>item.setScale(1.5);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>} else {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>item.setTint(0xffd700);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>item.setDisplaySize(20, 20);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>item.type = 'coin';</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>}</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>spawnEnemy() {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>if (this.isDead) return;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const angle = Math.random() * Math.PI * 2;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const r = 600;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const x = this.player.x + Math.cos(angle) * r;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const y = this.player.y + Math.sin(angle) * r;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>let typeKey;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const roll = Math.random();</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>if (roll &lt; 0.4) typeKey = 'light';</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>else if (roll &lt; 0.7) typeKey = 'heavy';</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>else typeKey = 'gunner';</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const cfg = ENEMY_TYPES[typeKey];</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>let enemy = this.enemies.create(</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>x,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>y,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>this.textures.exists('pirate') ? 'pirate' : 'placeholder_rect'</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>);</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const level = this.playerLevel || 1;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const hpMult = Math.pow(1.14, level - 1);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const dmgMult = Math.pow(1.16, level - 1);</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>enemy.type = typeKey;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>enemy.maxHp = Math.round(cfg.maxHp * hpMult);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>enemy.hp = enemy.maxHp;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>enemy.damage = Math.round(cfg.damage * dmgMult);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>enemy.xp = cfg.xp;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>enemy.setTint(cfg.tint);</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>if (this.textures.exists('pirate')) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>enemy.play('pirate_walk');</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>}</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>basicAttack() {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const offset = this.player.flipX ? -40 : 40;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const slash = this.add.text(</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>this.player.x + offset,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>this.player.y,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>'/',</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>{ fontSize: '40px', color: '#fff' }</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>).setOrigin(0.5);</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.tweens.add({</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>targets: slash,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>alpha: 0,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>duration: 200,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>onComplete: () =&gt; slash.destroy()</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>});</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const hit = this.projectiles.create(</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>this.player.x + offset,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>this.player.y,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>null</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>hit.setVisible(false);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>hit.body.setSize(60, 60);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>hit.damage = this.baseDamage;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>hit.isUlt = false;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.time.delayedCall(100, () =&gt; hit.destroy());</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>}</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>onHitEnemy(proj, enemy) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>enemy.hp -= proj.damage;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>if (!proj.isUlt) proj.destroy();</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>if (enemy.hp &lt;= 0) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>this.onEnemyKilled(enemy);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>}</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>onEnemyKilled(enemy) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>enemy.destroy();</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.killCount++;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const gainXp = enemy.xp || 5;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.playerXp += gainXp;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.ultCharge++;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.checkLevelUp();</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.updateHUD();</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>}</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>onHitPlayer(pl, en) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>if (this.isDead) return;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const dmg = en.damage || 5;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.hp -= dmg;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.cameras.main.shake(100, 0.005);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.updateHUD();</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const a = Phaser.Math.Angle.Between(pl.x, pl.y, en.x, en.y);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>en.x += Math.cos(a) * 50;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>en.y += Math.sin(a) * 50;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>if (this.hp &lt;= 0) this.gameOver();</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>}</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>onCollectItem(pl, item) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>if (item.type === 'coin') {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>score += 50;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>} else if (item.type === 'potion') {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const heal = Math.round(this.maxHp * 0.15);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>this.hp = Math.min(this.hp + heal, this.maxHp);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>item.destroy();</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.updateHUD();</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>}</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>checkLevelUp() {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>let nextLevel = this.playerLevel + 1;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>if (nextLevel &gt;= LEVEL_THRESHOLDS.length) return;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const neededXp = LEVEL_THRESHOLDS[nextLevel];</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>if (this.playerXp &gt;= neededXp) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>this.playerLevel = nextLevel;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const growth = HERO_GROWTH[selectedCharKey];</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>if (growth) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>this.maxHp = Math.round(this.maxHp * (1 + growth.hp));</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>this.baseDamage = Math.round(this.baseDamage * (1 + growth.dmg));</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>this.hp = this.maxHp;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>}</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>updateHUD() {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const finalScore = Math.floor(gameTime * 1 + this.killCount * 1.75);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>score = finalScore;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const scoreEl = document.getElementById('score-display');</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const timeEl<span class="Apple-converted-space">  </span>= document.getElementById('time-display');</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const hpFill<span class="Apple-converted-space">  </span>= document.getElementById('hp-fill');</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const ultFill = document.getElementById('ult-fill');</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const ultText = document.getElementById('ult-text');</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const xpFill<span class="Apple-converted-space">  </span>= document.getElementById('xp-fill');</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const xpText<span class="Apple-converted-space">  </span>= document.getElementById('xp-text');</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const lvlInfo = document.getElementById('level-info');</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>if (!scoreEl) return;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>scoreEl.innerText = `SKOR: ${score}`;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>timeEl.innerText<span class="Apple-converted-space">  </span>= `SÜRE: ${gameTime}s`;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const hpRatio = this.hp / this.maxHp;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const hpPct = hpRatio * 100;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>hpFill.style.width = `${Math.max(0, hpPct)}%`;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const isLowHp = hpRatio &lt;= 0.25;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>hpFill.classList.toggle('hp-critical', isLowHp);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>document.body.classList.toggle('low-hp-active', isLowHp);</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const reqKills = CHARACTERS[selectedCharKey].ultReq;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const ultPct = Math.min(100, (this.ultCharge / reqKills) * 100);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>ultFill.style.width = `${ultPct}%`;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>ultText.innerText = `ULTI (SHIFT) – ${this.ultCharge} / ${reqKills} KILL`;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const ultReady = this.ultCharge &gt;= reqKills;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>ultFill.classList.toggle('ulti-ready-glow', ultReady);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>ultText.classList.toggle('ulti-ready-glow', ultReady);</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const currentLevel = this.playerLevel;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const currentXp = this.playerXp;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const currentThreshold = LEVEL_THRESHOLDS[currentLevel] <span class="Apple-converted-space">    </span>|| 0;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const nextThreshold<span class="Apple-converted-space">    </span>= LEVEL_THRESHOLDS[currentLevel + 1] || currentThreshold;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>let xpPct = 100;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>if (nextThreshold &gt; currentThreshold) {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>xpPct = ((currentXp - currentThreshold) / (nextThreshold - currentThreshold)) * 100;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>xpFill.style.width = `${Phaser.Math.Clamp(xpPct, 0, 100)}%`;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>xpText.innerText = `XP: ${currentXp} / ${nextThreshold}`;</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>lvlInfo.innerText = `Seviye: ${currentLevel} • Kill: ${this.killCount}`;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>}</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>gameOver() {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.isDead = true;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.physics.pause();</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>this.player.setTint(0x555555);</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>document.getElementById('hud').style.display = 'none';</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>document.getElementById('game-over-screen').style.display = 'block';</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>document.getElementById('final-score-text').innerText = `Toplam Puan: ${score}`;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>}</span></p>
-<p class="p1"><span class="s1">}</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1">function initCharSelection() {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>const container = document.getElementById('char-container');</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>Object.keys(CHARACTERS).forEach(key =&gt; {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const char = CHARACTERS[key];</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const div = document.createElement('div');</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>div.className = 'char-card';</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>div.innerHTML = `</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>&lt;div style="width:100%; height:80px; background-color:#${char.color.toString(16)}; margin-bottom:5px;"&gt;&lt;/div&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>&lt;span style="color:white; font-weight:bold;"&gt;${char.name}&lt;/span&gt;&lt;br&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>&lt;span style="color:#aaa; font-size:11px;"&gt;${char.desc.replace('\n','&lt;br&gt;')}&lt;/span&gt;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>`;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>div.onclick = () =&gt; {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>selectedCharKey = key;</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>document.getElementById('char-select-screen').style.display = 'none';</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>document.getElementById('hud').style.display = 'flex';</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>game = new Phaser.Game({</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>type: Phaser.AUTO,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>parent: document.body,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>width: window.innerWidth,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>height: window.innerHeight,</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>physics: { default: 'arcade' },</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>scene: [PreloadScene, MainScene],</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>transparent: true</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>});</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>};</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>container.appendChild(div);</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>});</span></p>
-<p class="p1"><span class="s1">}</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1">function saveAndRestart() {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>location.reload();</span></p>
-<p class="p1"><span class="s1">}</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1">function shareStory() {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>alert("Story özelliği bu sürümde sadece placeholder. 🎨\nİleride buradan görsel export alacağız.");</span></p>
-<p class="p1"><span class="s1">}</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1">function openCoffee() {</span></p>
-<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>window.open("https://buymeacoffee.com/sezerdalgic", "_blank");</span></p>
-<p class="p1"><span class="s1">}</span></p>
-<p class="p2"><span class="s1"></span><br></p>
-<p class="p1"><span class="s1">window.onload = initCharSelection;</span></p>
-<p class="p1"><span class="s1">&lt;/script&gt;</span></p>
-<p class="p1"><span class="s1">&lt;/body&gt;</span></p>
-<p class="p1"><span class="s1">&lt;/html&gt;</span></p>
+
+<div id="ui-container">
+    <div id="low-hp-overlay"></div>
+
+    <div class="hud-bar" id="hud" style="display: none;">
+        <div class="bars-wrapper">
+            <div class="bar-bg">
+                <div id="hp-fill" class="bar-fill"></div>
+                <div class="bar-text">CAN</div>
+            </div>
+
+            <div class="bar-bg">
+                <div id="ult-fill" class="bar-fill"></div>
+                <div class="bar-text" id="ult-text">ULTI (SHIFT)</div>
+            </div>
+
+            <div class="bar-bg">
+                <div id="xp-fill" class="bar-fill"
+                     style="background: linear-gradient(90deg, #2980b9, #3498db); width: 0%;"></div>
+                <div class="bar-text" id="xp-text">XP: 0 / 100</div>
+            </div>
+
+            <div id="level-info"
+                 style="margin-top:4px; font-size:12px; color:#ecf0f1; text-shadow:1px 1px 0 #000;">
+                Seviye: 1 • Kill: 0
+            </div>
+        </div>
+
+        <div style="color:white; font-weight:bold; font-size:20px; text-shadow: 2px 2px 0 #000;">
+            <div id="score-display">SKOR: 0</div>
+            <div id="time-display" style="color: #f1c40f;">SÜRE: 0s</div>
+        </div>
+    </div>
+    
+    <div id="char-select-screen">
+        <h2 style="color: white; margin-bottom: 20px;">KAHRAMANINI SEÇ</h2>
+        <div id="char-container"></div>
+    </div>
+
+    <div id="game-over-screen">
+        <h1 style="color: #e74c3c; margin: 0;">OYUN BİTTİ</h1>
+        <p id="final-score-text">Skor: 0</p>
+        <input type="text" id="player-name" placeholder="Adını Gir..." maxlength="10">
+        <button class="story-btn" onclick="shareStory()">📸 Story Paylaş</button>
+        <button onclick="saveAndRestart()">💾 Tekrar Oyna</button>
+        <button class="bmc-btn" onclick="openCoffee()">☕ Bana Bir Kahve Ismarla</button>
+        <div id="leaderboard" style="margin-top:10px; text-align:left; max-height:100px; overflow-y:auto; font-size:14px;"></div>
+    </div>
+</div>
+
+<script>
+const CHARACTERS = {
+    rogue: {
+        name: "Rogue",
+        hp: 90,
+        speed: 230,
+        dmg: 14,
+        ultReq: 12,
+        color: 0x8e44ad,
+        desc: "Hızlı, ölümcül.\nUlti: Gölge Kasırgası"
+    },
+    druid: {
+        name: "Druid",
+        hp: 105,
+        speed: 200,
+        dmg: 10,
+        ultReq: 10,
+        color: 0x27ae60,
+        desc: "Dengeli, destek.\nUlti: Kalkan + Kurt"
+    },
+    barbarian: {
+        name: "Barbarian",
+        hp: 120,
+        speed: 190,
+        dmg: 16,
+        ultReq: 14,
+        color: 0xc0392b,
+        desc: "Ağır vurur.\nUlti: Kanlı Yarma"
+    },
+    paladin: {
+        name: "Paladin",
+        hp: 140,
+        speed: 185,
+        dmg: 12,
+        ultReq: 15,
+        color: 0xf1c40f,
+        desc: "Tank, dayanıklı.\nUlti: İlahi Yıldırım"
+    }
+};
+
+const LEVEL_THRESHOLDS = [0, 100, 240, 420, 640, 900, 1200];
+
+const HERO_GROWTH = {
+    rogue:    { hp: 0.06, dmg: 0.12 },
+    druid:    { hp: 0.08, dmg: 0.08 },
+    barbarian:{ hp: 0.07, dmg: 0.13 },
+    paladin:  { hp: 0.10, dmg: 0.07 }
+};
+
+const ENEMY_TYPES = {
+    light:  { name: "Hafif Kılıçlı",  maxHp: 45, damage: 8,  xp: 5,  tint: 0xffaaaa },
+    heavy:  { name: "Ağır Kılıçlı",   maxHp: 75, damage: 11, xp: 15, tint: 0xff5555 },
+    gunner: { name: "Tüfekli Korsan", maxHp: 60, damage: 13, xp: 10, tint: 0xaaaaff }
+};
+
+let game;
+let selectedCharKey = null;
+let score = 0;
+let gameTime = 0;
+
+class PreloadScene extends Phaser.Scene {
+    constructor() { super({ key: 'PreloadScene' }); }
+    preload() {
+        this.load.on('loaderror', (file) => console.log('Dosya yok:', file.key));
+        ['rogue', 'barbarian', 'druid', 'paladin', 'pirate'].forEach(k => {
+            this.load.spritesheet(k, `${k}.png`, { frameWidth: 64, frameHeight: 64 });
+        });
+
+        this.load.spritesheet('coin', 'coin.png', { frameWidth: 32, frameHeight: 32 });
+        this.load.image('potion', 'potion.png');
+        this.load.image('logo', 'logo.png');
+    }
+    create() {
+        this.createGenTextures();
+
+        if(this.textures.exists('coin')) {
+            this.anims.create({
+                key: 'coin_spin',
+                frames: this.anims.generateFrameNumbers('coin', { start: 0, end: 15 }),
+                frameRate: 16,
+                repeat: -1
+            });
+        }
+
+        ['rogue', 'barbarian', 'druid', 'paladin'].forEach(k => {
+            if (this.textures.exists(k)) {
+                this.anims.create({
+                    key: k + '_walk',
+                    frames: this.anims.generateFrameNumbers(k, { start: 0, end: 3 }),
+                    frameRate: 8,
+                    repeat: -1
+                });
+            }
+        });
+
+        if (this.textures.exists('pirate')) {
+            this.anims.create({
+                key: 'pirate_walk',
+                frames: this.anims.generateFrameNumbers('pirate', { start: 0, end: 3 }),
+                frameRate: 8,
+                repeat: -1
+            });
+        }
+
+        this.scene.start('MainScene');
+    }
+    createGenTextures() {
+        const g = this.make.graphics({x:0, y:0});
+        g.fillStyle(0x333333);
+        g.fillRect(0,0,256,256);
+        g.generateTexture('ground_gen', 256, 256);
+
+        const r = this.make.graphics({x:0, y:0});
+        r.fillStyle(0xffffff);
+        r.fillRect(0,0,32,32);
+        r.generateTexture('placeholder_rect', 32, 32);
+    }
+}
+
+class MainScene extends Phaser.Scene {
+    constructor() { super({ key: 'MainScene' }); }
+
+    create() {
+        if (!selectedCharKey) return;
+
+        this.ground = this.add.tileSprite(
+            0, 0,
+            this.scale.width,
+            this.scale.height,
+            'ground_gen'
+        ).setScrollFactor(0).setTint(0x555555);
+
+        this.physics.world.setBounds(-10000, -10000, 20000, 20000);
+
+        const charData = CHARACTERS[selectedCharKey];
+        let pKey = this.textures.exists(selectedCharKey) ? selectedCharKey : 'placeholder_rect';
+        
+        this.player = this.physics.add.sprite(0, 0, pKey);
+        if (pKey === 'placeholder_rect') {
+            this.player.setTint(charData.color).setScale(2);
+        } else {
+            this.player.play(selectedCharKey + '_walk');
+        }
+
+        this.cameras.main.startFollow(this.player, true, 0.1, 0.1).setZoom(1.2);
+
+        this.hp = charData.hp;
+        this.maxHp = charData.hp;
+        this.baseDamage = charData.dmg;
+        this.ultCharge = 0;
+        this.isDead = false;
+        score = 0;
+        gameTime = 0;
+
+        this.playerLevel = 1;
+        this.playerXp = 0;
+        this.killCount = 0;
+
+        this.cursors = this.input.keyboard.createCursorKeys();
+        this.wasd = this.input.keyboard.addKeys({
+            W: 'W', A: 'A', S: 'S', D: 'D',
+            SPACE: 'SPACE', SHIFT: 'SHIFT'
+        });
+
+        this.enemies = this.physics.add.group();
+        this.projectiles = this.physics.add.group();
+        this.items = this.physics.add.group();
+
+        this.physics.add.overlap(this.projectiles, this.enemies, this.onHitEnemy, null, this);
+        this.physics.add.collider(this.player, this.enemies, this.onHitPlayer, null, this);
+        this.physics.add.overlap(this.player, this.items, this.onCollectItem, null, this);
+
+        this.time.addEvent({
+            delay: 1000,
+            loop: true,
+            callback: () => {
+                if (!this.isDead) {
+                    gameTime++;
+                    this.updateHUD();
+                }
+            }
+        });
+        this.time.addEvent({
+            delay: 800,
+            loop: true,
+            callback: this.spawnEnemy,
+            callbackScope: this
+        });
+        this.time.addEvent({
+            delay: 2000,
+            loop: true,
+            callback: this.spawnItem,
+            callbackScope: this
+        });
+
+        this.updateHUD();
+    }
+
+    update() {
+        if (this.isDead || !this.player) return;
+
+        this.ground.tilePositionX = this.cameras.main.scrollX;
+        this.ground.tilePositionY = this.cameras.main.scrollY;
+
+        const speed = CHARACTERS[selectedCharKey].speed;
+        let vx = 0, vy = 0;
+        if (this.cursors.left.isDown || this.wasd.A.isDown) vx = -speed;
+        else if (this.cursors.right.isDown || this.wasd.D.isDown) vx = speed;
+        if (this.cursors.up.isDown || this.wasd.W.isDown) vy = -speed;
+        else if (this.cursors.down.isDown || this.wasd.S.isDown) vy = speed;
+        this.player.setVelocity(vx, vy);
+        if (vx !== 0) this.player.setFlipX(vx < 0);
+
+        this.player.setDepth(this.player.y);
+        this.enemies.getChildren().forEach(e => e.setDepth(e.y));
+
+        if (Phaser.Input.Keyboard.JustDown(this.wasd.SPACE)) {
+            this.basicAttack();
+        }
+        if (Phaser.Input.Keyboard.JustDown(this.wasd.SHIFT) &&
+            this.ultCharge >= CHARACTERS[selectedCharKey].ultReq) {
+            this.useUltimate();
+        }
+
+        this.enemies.getChildren().forEach(enemy => {
+            this.physics.moveToObject(enemy, this.player, 60 + (gameTime / 2));
+        });
+    }
+
+    useUltimate() {
+        this.ultCharge = 0;
+        this.updateHUD();
+
+        const char = selectedCharKey;
+
+        if (char === 'paladin') {
+            this.player.setVelocity(0, 0);
+            if (this.player.body) this.player.body.moves = false;
+            this.time.delayedCall(700, () => {
+                if (this.player.body) this.player.body.moves = true;
+            });
+
+            const radius = 200;
+            const blast = this.add.circle(
+                this.player.x,
+                this.player.y,
+                radius,
+                CHARACTERS[char].color,
+                0.4
+            );
+            this.tweens.add({
+                targets: blast,
+                alpha: 0,
+                duration: 500,
+                onComplete: () => blast.destroy()
+            });
+
+            const ultDmg = this.baseDamage * 3;
+            this.enemies.getChildren().forEach(e => {
+                if (Phaser.Math.Distance.Between(
+                    this.player.x, this.player.y, e.x, e.y
+                ) < radius) {
+                    e.hp -= ultDmg;
+                    if (e.hp <= 0) this.onEnemyKilled(e);
+                }
+            });
+
+            const heal = Math.round(this.maxHp * 0.15);
+            this.hp = Math.min(this.hp + heal, this.maxHp);
+            this.updateHUD();
+        } else if (char === 'barbarian') {
+            const radius = 220;
+            const color = CHARACTERS[char].color;
+            const blast = this.add.circle(this.player.x, this.player.y, radius, color, 0.35);
+            this.tweens.add({ targets: blast, alpha: 0, duration: 400, onComplete: () => blast.destroy() });
+
+            const ultDmg = this.baseDamage * 4;
+            this.enemies.getChildren().forEach(e => {
+                if (Phaser.Math.Distance.Between(this.player.x, this.player.y, e.x, e.y) < radius) {
+                    e.hp -= ultDmg;
+                    if (e.hp <= 0) this.onEnemyKilled(e);
+                }
+            });
+        } else if (char === 'rogue') {
+            const radius = 160;
+            const ticks = 5;
+            const dmgPerTick = Math.round(this.baseDamage * 0.8);
+
+            for (let i = 0; i < ticks; i++) {
+                this.time.delayedCall(i * 200, () => {
+                    const ring = this.add.circle(
+                        this.player.x,
+                        this.player.y,
+                        radius,
+                        CHARACTERS[char].color,
+                        0.25
+                    );
+                    this.tweens.add({
+                        targets: ring,
+                        alpha: 0,
+                        duration: 200,
+                        onComplete: () => ring.destroy()
+                    });
+
+                    this.enemies.getChildren().forEach(e => {
+                        if (Phaser.Math.Distance.Between(
+                            this.player.x, this.player.y, e.x, e.y
+                        ) < radius) {
+                            e.hp -= dmgPerTick;
+                            if (e.hp <= 0) this.onEnemyKilled(e);
+                        }
+                    });
+                });
+            }
+        } else if (char === 'druid') {
+            const radius = 180;
+            const shield = Math.round(this.maxHp * 0.15);
+            this.hp = Math.min(this.hp + shield, this.maxHp);
+
+            const ring = this.add.circle(
+                this.player.x,
+                this.player.y,
+                radius,
+                CHARACTERS[char].color,
+                0.3
+            );
+            this.tweens.add({
+                targets: ring,
+                alpha: 0,
+                duration: 500,
+                onComplete: () => ring.destroy()
+            });
+
+            const ultDmg = this.baseDamage * 2;
+            this.enemies.getChildren().forEach(e => {
+                if (Phaser.Math.Distance.Between(
+                    this.player.x, this.player.y, e.x, e.y
+                ) < radius) {
+                    e.hp -= ultDmg;
+                    if (e.hp <= 0) this.onEnemyKilled(e);
+                }
+            });
+
+            this.updateHUD();
+        }
+    }
+
+    spawnItem() {
+        const x = this.player.x + Phaser.Math.Between(-400, 400);
+        const y = this.player.y + Phaser.Math.Between(-300, 300);
+
+        if (Math.random() > 0.7) {
+            let item = this.items.create(x, y, 'potion').setScale(0.8);
+            item.type = 'potion';
+            this.tweens.add({
+                targets: item,
+                y: y - 5,
+                duration: 1000,
+                yoyo: true,
+                repeat: -1
+            });
+        } else {
+            let item = this.items.create(
+                x, y,
+                this.textures.exists('coin') ? 'coin' : 'placeholder_rect'
+            );
+            if (this.textures.exists('coin')) {
+                item.play('coin_spin');
+                item.setScale(1.5);
+            } else {
+                item.setTint(0xffd700);
+                item.setDisplaySize(20, 20);
+            }
+            item.type = 'coin';
+        }
+    }
+
+    spawnEnemy() {
+        if (this.isDead) return;
+
+        const angle = Math.random() * Math.PI * 2;
+        const r = 600;
+        const x = this.player.x + Math.cos(angle) * r;
+        const y = this.player.y + Math.sin(angle) * r;
+
+        let typeKey;
+        const roll = Math.random();
+        if (roll < 0.4) typeKey = 'light';
+        else if (roll < 0.7) typeKey = 'heavy';
+        else typeKey = 'gunner';
+
+        const cfg = ENEMY_TYPES[typeKey];
+
+        let enemy = this.enemies.create(
+            x,
+            y,
+            this.textures.exists('pirate') ? 'pirate' : 'placeholder_rect'
+        );
+
+        const level = this.playerLevel || 1;
+        const hpMult = Math.pow(1.14, level - 1);
+        const dmgMult = Math.pow(1.16, level - 1);
+
+        enemy.type = typeKey;
+        enemy.maxHp = Math.round(cfg.maxHp * hpMult);
+        enemy.hp = enemy.maxHp;
+        enemy.damage = Math.round(cfg.damage * dmgMult);
+        enemy.xp = cfg.xp;
+
+        enemy.setTint(cfg.tint);
+
+        if (this.textures.exists('pirate')) {
+            enemy.play('pirate_walk');
+        }
+    }
+
+    basicAttack() {
+        const offset = this.player.flipX ? -40 : 40;
+        const slash = this.add.text(
+            this.player.x + offset,
+            this.player.y,
+            '/',
+            { fontSize: '40px', color: '#fff' }
+        ).setOrigin(0.5);
+
+        this.tweens.add({
+            targets: slash,
+            alpha: 0,
+            duration: 200,
+            onComplete: () => slash.destroy()
+        });
+
+        const hit = this.projectiles.create(
+            this.player.x + offset,
+            this.player.y,
+            null
+        );
+        hit.setVisible(false);
+        hit.body.setSize(60, 60);
+        hit.damage = this.baseDamage;
+        hit.isUlt = false;
+
+        this.time.delayedCall(100, () => hit.destroy());
+    }
+
+    onHitEnemy(proj, enemy) {
+        enemy.hp -= proj.damage;
+        if (!proj.isUlt) proj.destroy();
+
+        if (enemy.hp <= 0) {
+            this.onEnemyKilled(enemy);
+        }
+    }
+
+    onEnemyKilled(enemy) {
+        enemy.destroy();
+
+        this.killCount++;
+
+        const gainXp = enemy.xp || 5;
+        this.playerXp += gainXp;
+
+        this.ultCharge++;
+
+        this.checkLevelUp();
+        this.updateHUD();
+    }
+
+    onHitPlayer(pl, en) {
+        if (this.isDead) return;
+
+        const dmg = en.damage || 5;
+        this.hp -= dmg;
+
+        this.cameras.main.shake(100, 0.005);
+        this.updateHUD();
+
+        const a = Phaser.Math.Angle.Between(pl.x, pl.y, en.x, en.y);
+        en.x += Math.cos(a) * 50;
+        en.y += Math.sin(a) * 50;
+
+        if (this.hp <= 0) this.gameOver();
+    }
+
+    onCollectItem(pl, item) {
+        if (item.type === 'coin') {
+            score += 50;
+        } else if (item.type === 'potion') {
+            const heal = Math.round(this.maxHp * 0.15);
+            this.hp = Math.min(this.hp + heal, this.maxHp);
+        }
+        item.destroy();
+        this.updateHUD();
+    }
+
+    checkLevelUp() {
+        let nextLevel = this.playerLevel + 1;
+        if (nextLevel >= LEVEL_THRESHOLDS.length) return;
+
+        const neededXp = LEVEL_THRESHOLDS[nextLevel];
+        if (this.playerXp >= neededXp) {
+            this.playerLevel = nextLevel;
+
+            const growth = HERO_GROWTH[selectedCharKey];
+            if (growth) {
+                this.maxHp = Math.round(this.maxHp * (1 + growth.hp));
+                this.baseDamage = Math.round(this.baseDamage * (1 + growth.dmg));
+                this.hp = this.maxHp;
+            }
+        }
+    }
+
+    updateHUD() {
+        const finalScore = Math.floor(gameTime * 1 + this.killCount * 1.75);
+        score = finalScore;
+
+        const scoreEl = document.getElementById('score-display');
+        const timeEl  = document.getElementById('time-display');
+        const hpFill  = document.getElementById('hp-fill');
+        const ultFill = document.getElementById('ult-fill');
+        const ultText = document.getElementById('ult-text');
+        const xpFill  = document.getElementById('xp-fill');
+        const xpText  = document.getElementById('xp-text');
+        const lvlInfo = document.getElementById('level-info');
+
+        if (!scoreEl) return;
+
+        scoreEl.innerText = `SKOR: ${score}`;
+        timeEl.innerText  = `SÜRE: ${gameTime}s`;
+
+        const hpRatio = this.hp / this.maxHp;
+        const hpPct = hpRatio * 100;
+        hpFill.style.width = `${Math.max(0, hpPct)}%`;
+
+        const isLowHp = hpRatio <= 0.25;
+        hpFill.classList.toggle('hp-critical', isLowHp);
+        document.body.classList.toggle('low-hp-active', isLowHp);
+
+        const reqKills = CHARACTERS[selectedCharKey].ultReq;
+        const ultPct = Math.min(100, (this.ultCharge / reqKills) * 100);
+        ultFill.style.width = `${ultPct}%`;
+        ultText.innerText = `ULTI (SHIFT) – ${this.ultCharge} / ${reqKills} KILL`;
+
+        const ultReady = this.ultCharge >= reqKills;
+        ultFill.classList.toggle('ulti-ready-glow', ultReady);
+        ultText.classList.toggle('ulti-ready-glow', ultReady);
+
+        const currentLevel = this.playerLevel;
+        const currentXp = this.playerXp;
+
+        const currentThreshold = LEVEL_THRESHOLDS[currentLevel]     || 0;
+        const nextThreshold    = LEVEL_THRESHOLDS[currentLevel + 1] || currentThreshold;
+
+        let xpPct = 100;
+        if (nextThreshold > currentThreshold) {
+            xpPct = ((currentXp - currentThreshold) / (nextThreshold - currentThreshold)) * 100;
+        }
+        xpFill.style.width = `${Phaser.Math.Clamp(xpPct, 0, 100)}%`;
+        xpText.innerText = `XP: ${currentXp} / ${nextThreshold}`;
+
+        lvlInfo.innerText = `Seviye: ${currentLevel} • Kill: ${this.killCount}`;
+    }
+
+    gameOver() {
+        this.isDead = true;
+        this.physics.pause();
+        this.player.setTint(0x555555);
+
+        document.getElementById('hud').style.display = 'none';
+        document.getElementById('game-over-screen').style.display = 'block';
+        document.getElementById('final-score-text').innerText = `Toplam Puan: ${score}`;
+    }
+}
+
+function initCharSelection() {
+    const container = document.getElementById('char-container');
+    Object.keys(CHARACTERS).forEach(key => {
+        const char = CHARACTERS[key];
+        const div = document.createElement('div');
+        div.className = 'char-card';
+        div.innerHTML = `
+            <div style="width:100%; height:80px; background-color:#${char.color.toString(16)}; margin-bottom:5px;"></div>
+            <span style="color:white; font-weight:bold;">${char.name}</span><br>
+            <span style="color:#aaa; font-size:11px;">${char.desc.replace('\n','<br>')}</span>
+        `;
+        div.onclick = () => {
+            selectedCharKey = key;
+            document.getElementById('char-select-screen').style.display = 'none';
+            document.getElementById('hud').style.display = 'flex';
+            game = new Phaser.Game({
+                type: Phaser.AUTO,
+                parent: document.body,
+                width: window.innerWidth,
+                height: window.innerHeight,
+                physics: { default: 'arcade' },
+                scene: [PreloadScene, MainScene],
+                transparent: true
+            });
+        };
+        container.appendChild(div);
+    });
+}
+
+function saveAndRestart() {
+    location.reload();
+}
+
+function shareStory() {
+    alert("Story özelliği bu sürümde sadece placeholder. 🎨\nİleride buradan görsel export alacağız.");
+}
+
+function openCoffee() {
+    window.open("https://buymeacoffee.com/sezerdalgic", "_blank");
+}
+
+window.onload = initCharSelection;
+</script>
 </body>
 </html>
